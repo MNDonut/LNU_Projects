@@ -25,9 +25,9 @@ def table():
             elif RadioLang.get() == "en" and char.lower() in "zxcvbnmasdfghjklqwertyuiop":
                 countLetters[char.lower()] = countLetters.get(char.lower(), 0) + 1
     global amount
-    amount = sum(countLetters.values())
+    amount = len(FileText.get("1.0", END)) - 1
     for letter, count in countLetters.items():
-        OutputText.insert(END, "| " + letter + " | - " + str(count*100/sum(countLetters.values())) + "%\n")
+        OutputText.insert(END, "| " + letter + " | - " + str(count*100/amount) + "%\n")
 
 def sorting():
     data = re.findall(r".+\s([a-zA-Zа-яїєіф])\D+(\d+.\d+)", OutputText.get("1.0", END))
@@ -36,84 +36,72 @@ def sorting():
         if RadioSort.get() == "period":
             sort = sorted(data, key = lambda x: float(x[1]))
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
+                OutputText.insert(END, "| " + letter + " | - " + str(count) + "%\n")
         else:
             sort = sorted(data, key = lambda x: x[0])
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
+                OutputText.insert(END, "| " + letter + " | - " + str(count) + "%\n")
     else:
         if RadioSort.get() == "period":
             sort = sorted(data, key = lambda x: float(x[1]), reverse=True)
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
+                OutputText.insert(END, "| " + letter + " | - " + str(count) + "%\n")
         else:
             sort = sorted(data, key = lambda x: x[0], reverse=True)
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
-
-def average(list1, n1, list2, n2, letter):
-    p1, p2 = 0, 0
-    # буква в одному слові але не в іншому або навпаки після двох слів
-    #  program  file       program  file
-    for tupl1, tupl2 in zip(list1, list2):
-        if tupl1[0] == letter:
-            p1 = tupl1[1]
-        if tupl2[0] == letter:
-            p2 = tupl2[1]
-    if p1 == 0:
-        print(letter)
-    if p2 == 0:
-        print(letter)
-    return str((float(p1)*n1 + float(p2)*n2) / (n1 + n2))
+                OutputText.insert(END, "| " + letter + " | - " + str(count) + "%\n")
     
-
-def save():
-    global isEmpty
-    # якщо перший раз відкритий файл
-    if not isEmpty:
-        isEmpty += 1
-        with open("Result.txt", "w") as file:
-            for line in OutputText.get("1.0", END):
-                file.write(line.encode('utf8').decode('cp1251'))
-            file.write(f"Count of symbols: {amount}")
-    # якщо другий раз
+def save(dictionary = {}):
+    # update - change value or add a new pair
+    ProgramTuples = re.findall(r".*\s([a-zA-Zа-яїєіф])\D+(\d+.\d+)%", OutputText.get("1.0", END))
+    # all program tuples in this dict
+    ProgramDict = dict()
+    for pair in ProgramTuples:
+        ProgramDict[pair[0]] = float(pair[1])
+    ProgramSize = amount
+    FileSize = 0
+    f = open("Result.txt", "r")
+    if len(f.read()) != 0:
+        f.seek(0)
+        FileSize = int(re.findall(r".*:\D+(\d+)", f.read())[0])
     else:
-        with open("Result.txt", "r") as file:
-            # усі букви і ймовірності в програмі(Список кортежів)
-            inProgramTuples = re.findall(r".*\s([a-zA-Zа-яїєіф])\D+(\d+.\d+)%", OutputText.get("1.0", END))
-            file.seek(0)
-            # усі букви і ймовірності у файлі(Список кортежів)
-            inFileTuples = re.findall(r".*\s([a-zA-Zа-яїєіф])\D+(\d+.\d+)%", file.read().encode('cp1251').decode('utf8'))
-            file.seek(0)
-            # кількість усіх букві у програмі
-            ProgramSize = amount
-            # кількість усіх букві у файлі
-            FileSize = int(re.findall(r".*:\D+(\d+)", file.read())[0])
-        # write new data in the file
-        with open("Result.txt", "w") as file:
-            allLetters = [x[0] for x in inProgramTuples] + [x[0] for x in inFileTuples]
-            print(allLetters)
-            # (P1N1 + P2N2) / (N1 + N2)
-            while allLetters:
-                for letter in allLetters:
-                    if allLetters.count(letter) == 1:
-                        file.write(f"| {letter.encode('utf8').decode('cp1251')} | - " + average(inProgramTuples, ProgramSize, inFileTuples, FileSize, letter) + "%\n")
-                        allLetters.remove(letter)
-                    else:
-                        file.write(f"| {letter.encode('utf8').decode('cp1251')} | - " + average(inProgramTuples, ProgramSize, inFileTuples, FileSize, letter) + "%\n")
-                        allLetters.remove(letter)
-                        allLetters.remove(letter)
-            file.write("Count of symbols: " + str(ProgramSize + FileSize))
-            # print(inProgramTuples)
-            # print(inFileTuples)
-            # print(ProgramSize)
-            # print(FileSize)
+        FileSize = 0
+    #update prev
+    for key, val in dictionary.items():
+        if key in ProgramDict.keys():
+            dictionary[key] = (ProgramDict[key] * ProgramSize + val * FileSize) / (ProgramSize + FileSize)
+        # if key no in programdict => programdict[key] = 0
+        else:
+            dictionary[key] = (val * FileSize) / (ProgramSize + FileSize)
+
+    #add unique(than it's not in file => val = 0)
+    for pair in ProgramTuples:
+        if pair[0] not in dictionary.keys():
+            dictionary[pair[0]] = (float(pair[1]) * ProgramSize) / (FileSize + ProgramSize)
+
+    f.close()
+    f = open("Result.txt", "w")
+    for key, val in dictionary.items():
+        f.write("| " + key.encode('utf8').decode('cp1251') + " | - " + str(val) + "%\n")
+    etalon = open("Etalon.txt", "r")
+    etalondict = dict()
+    for line in etalon:
+        etalondict[line.split()[0].encode('cp1251').decode('utf8')] = float(line.split()[1])
+    final = open("Final.txt", "w")
+    final.write(("Максимальну частоту повторювань в еталоній таблиці має літера " + max(etalondict, key = lambda x: etalondict[x]) + " із значенням " + str(etalondict[max(etalondict, key = lambda x: etalondict[x])])).encode('utf8').decode('cp1251'))
+    final.write(("\nУ нашій же таблиці максимальну частоту повторень має літера " + max(dictionary, key = lambda x: dictionary[x]) + " із значенням " + str(dictionary[max(dictionary, key = lambda x: dictionary[x])])).encode('utf8').decode('cp1251'))
+    final.write(("\nМінімальну частоту повторювань в еталоній таблиці має літера " + min(etalondict, key = lambda x: etalondict[x]) + " із значенням " + str(etalondict[min(etalondict, key = lambda x: etalondict[x])])).encode('utf8').decode('cp1251'))
+    final.write(("\nУ нашій же таблиці мінімальну частоту повторень має літера " + min(dictionary, key = lambda x: dictionary[x]) + " із значенням " + str(dictionary[min(dictionary, key = lambda x: dictionary[x])])).encode('utf8').decode('cp1251'))
+    f.write("\nКількість символів: ".encode('utf8').decode('cp1251') + str(ProgramSize + FileSize))
+    f.close()
+    etalon.close()
+    final.close()
+
 
 def clear():
     FileText.delete("1.0", END)
     OutputText.delete("1.0", END)
 
-isEmpty = 0
 amount = 0
 
 root = Tk()
