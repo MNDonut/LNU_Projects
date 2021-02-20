@@ -2,8 +2,6 @@ from tkinter import *
 import re
 import tkinter.messagebox
 
-# уточнювати дані в моїй табличці після збереження 
-# та порівнювати з еталоною
 
 def findFile():
     FileText.delete("1.0", END)
