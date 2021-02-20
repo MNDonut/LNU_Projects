@@ -2,6 +2,8 @@ from tkinter import *
 import re
 import tkinter.messagebox
 
+# уточнювати дані в моїй табличці після збереження 
+# та порівнювати з еталоною
 
 def findFile():
     FileText.delete("1.0", END)
@@ -22,39 +24,97 @@ def table():
                 countLetters[char.lower()] = countLetters.get(char.lower(), 0) + 1
             elif RadioLang.get() == "en" and char.lower() in "zxcvbnmasdfghjklqwertyuiop":
                 countLetters[char.lower()] = countLetters.get(char.lower(), 0) + 1
+    global amount
+    amount = sum(countLetters.values())
     for letter, count in countLetters.items():
-        OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count*100/sum(countLetters.values())) + "\n")
+        OutputText.insert(END, "| " + letter + " | - " + str(count*100/sum(countLetters.values())) + "%\n")
 
 def sorting():
-    data = re.findall(r".+\s([a-zA-Zа-я])\D+(\d+.\d+)", OutputText.get("1.0", END))
+    data = re.findall(r".+\s([a-zA-Zа-яїєіф])\D+(\d+.\d+)", OutputText.get("1.0", END))
     OutputText.delete("1.0", END)
     if RadioSortDirection.get() == 1:
         if RadioSort.get() == "period":
             sort = sorted(data, key = lambda x: float(x[1]))
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "\n")
+                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
         else:
             sort = sorted(data, key = lambda x: x[0])
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "\n")
+                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
     else:
         if RadioSort.get() == "period":
             sort = sorted(data, key = lambda x: float(x[1]), reverse=True)
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "\n")
+                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
         else:
             sort = sorted(data, key = lambda x: x[0], reverse=True)
             for letter, count in sort:
-                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "\n")
+                OutputText.insert(END, "\t"*3 + "| " + letter + " | - " + str(count) + "%\n")
+
+def average(list1, n1, list2, n2, letter):
+    p1, p2 = 0, 0
+    # буква в одному слові але не в іншому або навпаки після двох слів
+    #  program  file       program  file
+    for tupl1, tupl2 in zip(list1, list2):
+        if tupl1[0] == letter:
+            p1 = tupl1[1]
+        if tupl2[0] == letter:
+            p2 = tupl2[1]
+    if p1 == 0:
+        print(letter)
+    if p2 == 0:
+        print(letter)
+    return str((float(p1)*n1 + float(p2)*n2) / (n1 + n2))
+    
 
 def save():
-    with open("Table.txt", "w") as file:
-        for line in OutputText.get("1.0", END):
-            file.write(line.encode('utf-8').decode('cp1251'))
+    global isEmpty
+    # якщо перший раз відкритий файл
+    if not isEmpty:
+        isEmpty += 1
+        with open("Result.txt", "w") as file:
+            for line in OutputText.get("1.0", END):
+                file.write(line.encode('utf8').decode('cp1251'))
+            file.write(f"Count of symbols: {amount}")
+    # якщо другий раз
+    else:
+        with open("Result.txt", "r") as file:
+            # усі букви і ймовірності в програмі(Список кортежів)
+            inProgramTuples = re.findall(r".*\s([a-zA-Zа-яїєіф])\D+(\d+.\d+)%", OutputText.get("1.0", END))
+            file.seek(0)
+            # усі букви і ймовірності у файлі(Список кортежів)
+            inFileTuples = re.findall(r".*\s([a-zA-Zа-яїєіф])\D+(\d+.\d+)%", file.read().encode('cp1251').decode('utf8'))
+            file.seek(0)
+            # кількість усіх букві у програмі
+            ProgramSize = amount
+            # кількість усіх букві у файлі
+            FileSize = int(re.findall(r".*:\D+(\d+)", file.read())[0])
+        # write new data in the file
+        with open("Result.txt", "w") as file:
+            allLetters = [x[0] for x in inProgramTuples] + [x[0] for x in inFileTuples]
+            print(allLetters)
+            # (P1N1 + P2N2) / (N1 + N2)
+            while allLetters:
+                for letter in allLetters:
+                    if allLetters.count(letter) == 1:
+                        file.write(f"| {letter.encode('utf8').decode('cp1251')} | - " + average(inProgramTuples, ProgramSize, inFileTuples, FileSize, letter) + "%\n")
+                        allLetters.remove(letter)
+                    else:
+                        file.write(f"| {letter.encode('utf8').decode('cp1251')} | - " + average(inProgramTuples, ProgramSize, inFileTuples, FileSize, letter) + "%\n")
+                        allLetters.remove(letter)
+                        allLetters.remove(letter)
+            file.write("Count of symbols: " + str(ProgramSize + FileSize))
+            # print(inProgramTuples)
+            # print(inFileTuples)
+            # print(ProgramSize)
+            # print(FileSize)
 
 def clear():
     FileText.delete("1.0", END)
     OutputText.delete("1.0", END)
+
+isEmpty = 0
+amount = 0
 
 root = Tk()
 root.title("Частотний Аналіз")
