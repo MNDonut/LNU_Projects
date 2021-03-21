@@ -22,10 +22,12 @@ def encryptedMatrix(matrix, rowKey, columnKey):
     with open("logfile.txt", "a") as file:
         for i in range(len(columnKey)):
             for j in range(len(columnKey) - i - 1):
+                # not j because of first zero
                 if matrix[0][j+1] > matrix[0][j+2]:
                     for k in range(len(matrix)):
                         matrix[k][j+1], matrix[k][j+2] =  matrix[k][j+2], matrix[k][j+1]
                     else:
+                        # if j then j+1 column
                         file.write(f"Change {j+2} column with {j+3} column\n")
 
         for row in matrix:
@@ -62,6 +64,7 @@ def shuffle(keys):
 def encrypt(): 
     matrix = []
     data = input("Введiть стрiчку для шифрування: ")
+    print(f"Довжина стрічки: {len(data)}")
     rows, columns = [int(i) for i in input("Введiть кiлькiсть рядкiв та стовпцiв: ").split()]
     while rows*columns != len(data):
         print("Неможливо створити матрицю з такими розмiрами")
