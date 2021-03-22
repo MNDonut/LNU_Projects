@@ -3,15 +3,23 @@ import re
 
 def createMatrix(matrix, rowNumbers, columnNumbers, data):
     matrix.append([0] + columnNumbers)
+    # data len = 31
+    # 5 7
     index = 0
     for i in range(len(rowNumbers)):
         # add number on the beginning of a row
         rowForAppend = [rowNumbers[i]]
         for _ in range(len(columnNumbers)):
             # through every symbol of data
-            rowForAppend += data[index]
-            index += 1
+            if index < len(data):
+                rowForAppend += data[index]
+                index += 1
+            else:
+                rowForAppend += "$"
+                index += 1
         matrix.append(rowForAppend)
+        
+        
     print("-"*15 + "\nСтрічка у вигляді матриці:")
     for row in matrix:
         print(" ".join(str(x) for x in row))
@@ -66,9 +74,9 @@ def encrypt():
     data = input("Введiть стрiчку для шифрування: ")
     print(f"Довжина стрічки: {len(data)}")
     rows, columns = [int(i) for i in input("Введiть кiлькiсть рядкiв та стовпцiв: ").split()]
-    while rows*columns != len(data):
-        print("Неможливо створити матрицю з такими розмiрами")
-        rows, columns = [int(i) for i in input("Введiть кiлькiсть рядкiв та стовпцiв: ").split()]
+    # while rows*columns != len(data):
+    #     print("Неможливо створити матрицю з такими розмiрами")
+    #     rows, columns = [int(i) for i in input("Введiть кiлькiсть рядкiв та стовпцiв: ").split()]
     with open("logfile.txt", "w") as file:
         file.write(f"Count of rows: {rows}\nCount of columns: {columns}\n")
     rowKey = [i + 1 for i in range(rows)]
@@ -105,6 +113,8 @@ def decrypt():
     # decrypting
     for i in rowKey:
         for j in columnKey:
+            if matrix[i][j] == "$":
+                continue
             print(matrix[i][j], end="")
     print()
 
