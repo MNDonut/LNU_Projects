@@ -55,9 +55,10 @@ def decrypt():
     decryptKey = []
     for i in key:
         if language == "ukr":
-            decryptKey.append(UKR[UKR_LEN-UKR.index(i)])
+            print(UKR_LEN-UKR.index(i))
+            decryptKey.append(UKR[UKR_LEN-UKR.index(i)]) if UKR.index(i) != 0 else decryptKey.append(UKR[0])
         else:
-            decryptKey.append(EN[EN_LEN-EN.index(i)])
+            decryptKey.append(EN[EN_LEN-EN.index(i)]) if EN.index(i) != 0 else decryptKey.append(EN[0])
     decryptedText = []
     for i, j in zip(encryptedText.replace(" ", "").replace(",", "").replace(".", ""), decryptKey):
         if language == "ukr":
