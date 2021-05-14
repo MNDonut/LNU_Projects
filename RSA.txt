@@ -1,0 +1,72 @@
+import random
+
+def Eratosphene(n):
+    numbers = list(range(n))
+    for i in numbers[2:]:
+        for j in range(2 * i, len(numbers), i):
+            numbers[j] = 0
+    return random.sample(list(set(numbers)), 2), sorted(list(set(numbers)))
+
+def Euclide(fi):
+    saveFi = fi
+    while True:
+        fi = saveFi
+        e = random.choice(numbers)
+        saveE = e
+        while fi != e:
+            while fi > e:
+                fi -= e
+            while e > fi:
+                e -= fi
+        if fi == e == 1 and 1 <= e <= fi:
+            return saveE
+        continue
+
+def ExtendEuclide(a, b):
+    if not a:
+        return 0, 1
+    else:
+        x, y = ExtendEuclide(b % a, a)
+        return y - (b // a) * x, x
+
+def binPower(a, b, m):
+    a %= m
+    res = 1
+    while (b > 0):
+        if b & 1:
+            res = res * a % m
+        a = a * a % m
+        b >>= 1
+    return res
+
+def encrypt(public):
+    n, public_key = public
+    msg = input("Enter message: ")
+    indexes = [ord(l) for l in msg]
+    encrypt = [binPower(i, public_key, n) for i in indexes]
+    with open("file.txt", 'w') as file:
+        file.write(' '.join(str(i) for i in encrypt))
+        file.write(f"\n{d}")
+        
+
+def decrypt(private):
+    n, private_key = private
+    with open('file.txt', 'r') as file:
+        indexes = file.readline().split()
+    decrypt = [binPower(int(i), private_key, n) for i in indexes]
+    print(''.join(chr(i) for i in decrypt))
+  
+
+n = int(input("Enter n: "))
+p, q, numbers = Eratosphene(n)[0][0], Eratosphene(n)[0][1], Eratosphene(n)[1]
+n = p * q
+fi = (p - 1) * (q - 1)
+e = Euclide(fi)
+d = ExtendEuclide(e, fi)[0]
+while d < 0:
+    d += fi
+print('p =', p, ', q =', q, 'n = ', n)
+print('fi =', fi, ', e =', e, ', d =', d)
+print(f'Open key: ({n, e}), Secret key: ({n, d})')
+encrypt((n, e))
+decrypt((n, d))
